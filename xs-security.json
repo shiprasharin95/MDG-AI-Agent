@@ -1,0 +1,43 @@
+{
+  "xsappname": "mdg-ai-bp",
+  "tenant-mode": "dedicated",
+  "description": "MDG with AI - Business Partner from Picture",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.User",
+      "description": "Upload customer forms, run the duplicate check and create MDG change requests"
+    },
+    {
+      "name": "uaa.user",
+      "description": "UAA"
+    }
+  ],
+  "attributes": [],
+  "oauth2-configuration": {
+    "redirect-uris": [
+      "https://mdg-ai-bp.cfapps.eu20-001.hana.ondemand.com/**",
+      "http://localhost:5000/**"
+    ],
+    "credential-types": ["binding-secret", "x509"]
+  },
+  "role-templates": [
+    {
+      "name": "MdgAiUser",
+      "description": "Upload customer forms and create MDG change requests in S23",
+      "scope-references": [
+        "$XSAPPNAME.User",
+        "uaa.user"
+      ],
+      "attribute-references": []
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "MDG_AI_BP_User",
+      "description": "MDG with AI - Business Partner from Picture (user)",
+      "role-template-references": [
+        "$XSAPPNAME.MdgAiUser"
+      ]
+    }
+  ]
+}

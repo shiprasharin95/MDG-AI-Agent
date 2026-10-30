@@ -1,0 +1,14 @@
+{
+  "welcomeFile": "/bpupload/webapp/index.html",
+  "authenticationMethod": "route",
+  "routes": [
+    {
+      "source": "^/(.*)$",
+      "target": "$1",
+      "destination": "srv-api",
+      "authenticationType": "xsuaa",
+      "scope": "$XSAPPNAME.User",
+      "csrfProtection": false
+    }
+  ]
+}

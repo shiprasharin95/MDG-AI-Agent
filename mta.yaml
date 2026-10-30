@@ -1,0 +1,116 @@
+_schema-version: 3.3.0
+ID: mdg-ai-bp
+version: 1.0.0
+description: "MDG with AI - upload a picture/PDF of a customer form, AI extracts the BP data,
+  duplicate check in S23 (BUT000/ADRC/DFKKBPTAXNUM) and automatic MDG change request creation"
+parameters:
+  enable-parallel-deployments: true
+
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production
+        - node scripts/copy-ui.js
+
+modules:
+  # ---------------------------------------------------------------- CAP backend
+  - name: mdg-ai-bp-srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      instances: 1
+      memory: 1024M
+      disk-quota: 2048M
+      buildpack: nodejs_buildpack
+    build-parameters:
+      builder: npm-ci
+    properties:
+      S23_MODE: remote                    # use the real S23 via destination S23_client_120
+      CDS_ENV: production
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: ${default-url}
+    requires:
+      - name: mdg-ai-bp-auth
+      - name: mdg-ai-bp-db
+      - name: mdg-ai-bp-connectivity
+      - name: mdg-ai-bp-destination
+      - name: mdg-ai-bp-aicore
+
+  # ------------------------------------------------------------- HANA deployer
+  - name: mdg-ai-bp-db-deployer
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+    requires:
+      - name: mdg-ai-bp-db
+
+  # ------------------------------------------------------------- App router (UI entry point)
+  - name: mdg-ai-bp
+    type: approuter.nodejs
+    path: app/router
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 256M
+      memory: 256M
+    requires:
+      - name: srv-api
+        group: destinations
+        properties:
+          name: srv-api
+          url: ~{srv-url}
+          forwardAuthToken: true
+      - name: mdg-ai-bp-auth
+      - name: mdg-ai-bp-destination
+    provides:
+      - name: app-api
+        properties:
+          app-protocol: ${protocol}
+          app-uri: ${default-uri}
+
+resources:
+  - name: mdg-ai-bp-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: mdg-ai-bp-${org}-${space}
+        tenant-mode: dedicated
+        oauth2-configuration:
+          credential-types:
+            - "binding-secret"
+            - "x509"
+          redirect-uris:
+            - https://*~{app-api/app-uri}/**
+    requires:
+      - name: app-api
+
+  - name: mdg-ai-bp-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+
+  - name: mdg-ai-bp-connectivity
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: connectivity
+      service-plan: lite
+
+  - name: mdg-ai-bp-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+
+  # Existing shared SAP AI Core instance in space GenAI (for the vision model)
+  - name: mdg-ai-bp-aicore
+    type: org.cloudfoundry.existing-service
+    parameters:
+      service-name: AICore

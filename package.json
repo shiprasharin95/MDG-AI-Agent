@@ -1,0 +1,126 @@
+{
+  "name": "mdg-ai-bp",
+  "version": "1.0.0",
+  "description": "MDG with AI - upload a picture/PDF of a customer form, AI extracts BP data, duplicate check against S23 (BUT000/ADRC/DFKKBPTAXNUM) and automatic MDG change request creation",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch": "cds watch",
+    "dev": "cds watch --open bpupload/webapp/index.html",
+    "remote": "cds watch --profile remote",
+    "test": "node test/run-samples.js",
+    "build": "cds build --production && node scripts/copy-ui.js"
+  },
+  "dependencies": {
+    "@cap-js/hana": "^2.8.3",
+    "@sap-ai-sdk/orchestration": "^2",
+    "@sap-cloud-sdk/http-client": "^4",
+    "@sap/cds": "^9",
+    "@sap/xssec": "^4",
+    "express": "^4",
+    "pdf-parse": "^2",
+    "tesseract.js": "^7"
+  },
+  "devDependencies": {
+    "@cap-js/cds-test": "^1.0.2",
+    "@sap/cds-dk": "^9",
+    "@cap-js/sqlite": "^2"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "url": ":memory:"
+        }
+      },
+      "[production]": {
+        "db": {
+          "kind": "hana",
+          "impl": "@cap-js/hana"
+        },
+        "auth": "xsuaa"
+      },
+      "connectivity": true,
+      "destinations": true,
+      "auth": {
+        "kind": "mocked",
+        "users": {
+          "test": {
+            "password": "test",
+            "roles": [
+              "User"
+            ]
+          }
+        }
+      }
+    },
+    "server": {
+      "body_parser": {
+        "limit": "25mb"
+      }
+    },
+    "mdgai": {
+      "s23": {
+        "mode": "mock",
+        "destination": "S23_120_BASIC",
+        "sapClient": "120",
+        "bpServicePath": "/sap/opu/odata/sap/API_BUSINESS_PARTNER",
+        "crServicePath": "/sap/opu/odata/sap/ZMDG_BP_CR_TEST_SRV",
+        "crType": "ZBP1P1",
+        "crTypeFallback": "BP1P1",
+        "autoCreateCR": true,
+        "crMethod": "odata",
+        "soaServicePath": "/sap/bc/srt/xip/sap/businesspartnersuitebulkreplic/120/mdg_ai_bp_in/mdg_ai_bp_in_binding",
+        "soaSenderSystem": "MDG_AI_CAP"
+      },
+      "ai": {
+        "provider": "auto",
+        "model": "gpt-4o",
+        "resourceGroup": "default",
+        "ocrLanguages": "deu+eng"
+      }
+    },
+    "[remote]": {
+      "mdgai": {
+        "s23": {
+          "mode": "remote"
+        }
+      }
+    },
+    "folders": {
+      "app": "app/"
+    },
+    "build": {
+      "target": "gen",
+      "tasks": [
+        {
+          "for": "nodejs",
+          "src": "srv",
+          "options": {
+            "model": [
+              "db",
+              "srv",
+              "app"
+            ]
+          }
+        },
+        {
+          "for": "hana",
+          "src": "db",
+          "options": {
+            "model": [
+              "db",
+              "srv",
+              "app"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

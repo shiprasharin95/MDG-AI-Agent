@@ -1,0 +1,161 @@
+{
+  "_version": "1.65.0",
+  "sap.app": {
+    "id": "mdgai.bpupload",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "dataSources": {
+      "mainService": {
+        "uri": "/odata/v4/mdg-ai/",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "4.0"
+        }
+      }
+    },
+    "crossNavigation": {
+      "inbounds": {
+        "bpupload-display": {
+          "semanticObject": "BusinessPartnerForm",
+          "action": "upload",
+          "title": "{{appTitle}}",
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          }
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.120.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {},
+        "sap.ui.unified": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "mdgai.bpupload.i18n.i18n"
+        }
+      },
+      "": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      }
+    },
+    "routing": {
+      "config": {},
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "FormUploadsList",
+          "target": "FormUploadsList"
+        },
+        {
+          "pattern": "FormUploads({key}):?query:",
+          "name": "FormUploadsObjectPage",
+          "target": "FormUploadsObjectPage"
+        }
+      ],
+      "targets": {
+        "FormUploadsList": {
+          "type": "Component",
+          "id": "FormUploadsList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/FormUploads",
+              "variantManagement": "Page",
+              "initialLoad": "Enabled",
+              "navigation": {
+                "FormUploads": {
+                  "detail": {
+                    "route": "FormUploadsObjectPage"
+                  }
+                }
+              },
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "ResponsiveTable",
+                    "selectionMode": "Single"
+                  },
+                  "actions": {
+                    "uploadForm": {
+                      "press": "mdgai.bpupload.ext.UploadHandler.onUpload",
+                      "visible": true,
+                      "enabled": true,
+                      "text": "{i18n>uploadButton}",
+                      "position": {
+                        "placement": "Before",
+                        "anchor": "DataFieldForAction::MdgAiService.reprocess"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "FormUploadsObjectPage": {
+          "type": "Component",
+          "id": "FormUploadsObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "contextPath": "/FormUploads",
+              "editableHeaderContent": false,
+              "content": {
+                "body": {
+                  "sections": {
+                    "DocumentPreview": {
+                      "template": "mdgai.bpupload.ext.DocumentPreview",
+                      "title": "{i18n>previewSection}",
+                      "position": {
+                        "placement": "After",
+                        "anchor": "Result"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "sap.fiori": {
+    "registrationIds": [],
+    "archeType": "transactional"
+  }
+}

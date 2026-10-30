@@ -1,0 +1,56 @@
+---
+applications:
+  # ---------------------------------------------------------------- CAP backend + Fiori UI
+  - name: mdg-ai-bp-srv
+    path: gen/srv
+    memory: 1024M
+    disk_quota: 2048M
+    buildpacks:
+      - nodejs_buildpack
+    health-check-type: http
+    health-check-http-endpoint: /health
+    env:
+      CDS_ENV: production
+      S23_MODE: remote                      # use the real S23 via BTP destination
+      S23_CR_SERVICE: /sap/opu/odata/sap/ZMDG_BP_CR_TEST_SRV   # class ZCL_MDG_BP_TEST_CR_CREATE (tested)
+      S23_CR_METHOD: odata                    # CR via standard SOA BusinessPartnerSUITEBulkReplicateRequest_In
+                                            # (set to "odata" to use the custom ZMDG_BP_CR_SRV instead)
+      NODE_OPTIONS: --max-old-space-size=900
+      # ---- E-mail channel (same Graph setup as the Job Failure Monitor) ----
+      MAIL_DESTINATION: AzureMailService           # existing BTP destination (Microsoft Graph)
+      MAIL_FROM: cap-notifications@bearingpoint.com # reply sender
+      MAIL_INBOX: cap-notifications@bearingpoint.com # users send forms here
+      MAIL_SUBJECT_KEYWORD: ai mdg agent             # subject must CONTAIN this (case-insensitive)
+      MAIL_NOTIFY_TO: shipra.sharin@bearingpoint.com # result mail for UI uploads (if no user e-mail)
+      # result mail for e-mails goes back to the sender (MAIL_REPLY_TO would override it)
+      MAIL_POLL_SECONDS: "120"
+      MAIL_ALLOWED_SENDER_DOMAINS: bearingpoint.com
+      APP_URL: https://mdg-ai-bp.cfapps.eu20-001.hana.ondemand.com
+      # ---- Links into S23 in the result mail ----
+      S23_WEB_URL: http://bedusapp23.dev.bearingpoint.com:50000
+      S23_WEB_CLIENT: "120"
+      S23_NWBC_URL: http://bedusapp23.dev.bearingpoint.com:50000/ui2/nwbc/?sap-nwbc-node=navigate_absolute&sap-nwbc-new_window=X&sap-client=120
+      # direct CR link ({CR} = 12-digit CR number) - adjust if S23 uses another MDG BP UI
+      S23_CR_LINK: http://bedusapp23.dev.bearingpoint.com:50000/sap/bc/webdynpro/sap/bs_ovp_bp?sap-client=120&sap-wd-configid=BS_OVP_BP_ALL&CREQUEST={CR}&ACTION=DISPLAY&USMD_OTC=147
+    services:
+      - mdg-ai-bp-auth
+      - mdg-ai-bp-db
+      - mdg-ai-bp-destination
+      - mdg-ai-bp-connectivity
+      - AICore
+
+  # ------------------------------------------------------------- App router (entry point)
+  - name: mdg-ai-bp
+    path: app/router
+    memory: 256M
+    disk_quota: 512M
+    buildpacks:
+      - nodejs_buildpack
+    env:
+      # default is 30 s - AI extraction + S23 duplicate check + CR creation needs more
+      REQUEST_TIMEOUT: "600000"
+      destinations: >
+        [{"name":"srv-api","url":"https://mdg-ai-bp-srv.cfapps.eu20-001.hana.ondemand.com","forwardAuthToken":true,"timeout":600000}]
+    services:
+      - mdg-ai-bp-auth
+      - mdg-ai-bp-destination

@@ -1,0 +1,24 @@
+# dependencies / build output
+node_modules/
+gen/
+mta_archives/
+*.mtar
+app/router/node_modules/
+
+# OCR language data (downloaded at runtime by tesseract.js)
+*.traineddata
+
+# local env / secrets - never commit
+.env
+.env.*
+default-env.json
+.cdsrc-private.json
+*.key
+*.pem
+
+# logs / OS / editor
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

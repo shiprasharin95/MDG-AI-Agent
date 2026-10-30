@@ -1,0 +1,7 @@
+code;name;descr;criticality
+UPLOADED;Uploaded;File uploaded, waiting for AI extraction;0
+EXTRACTED;Extracted;AI extracted name, address and tax number;2
+DUPLICATE;Duplicate Found;Business partner already exists in S23;2
+NO_MATCH;No BP Found;No business partner found - change request pending;2
+CR_CREATED;CR Created;MDG change request created with prefilled data;3
+ERROR;Error;Technical error during processing;1

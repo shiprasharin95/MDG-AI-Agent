@@ -1,0 +1,17 @@
+---
+applications:
+  # ------------------------------------------------------------- App router (entry point)
+  - name: mdg-ai-bp
+    path: .
+    memory: 256M
+    disk_quota: 512M
+    buildpacks:
+      - nodejs_buildpack
+    env:
+      # default is 30 s - AI extraction + S23 duplicate check + CR creation needs more
+      REQUEST_TIMEOUT: "600000"
+      destinations: >
+        [{"name":"srv-api","url":"https://mdg-ai-bp-srv.cfapps.eu20-001.hana.ondemand.com","forwardAuthToken":true,"timeout":600000}]
+    services:
+      - mdg-ai-bp-auth
+      - mdg-ai-bp-destination

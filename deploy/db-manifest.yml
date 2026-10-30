@@ -1,0 +1,13 @@
+---
+applications:
+  - name: mdg-ai-bp-db-deployer
+    path: ../gen/db
+    memory: 512M
+    disk_quota: 1024M
+    buildpacks:
+      - nodejs_buildpack
+    no-route: true
+    health-check-type: process
+    instances: 1
+    services:
+      - mdg-ai-bp-db
